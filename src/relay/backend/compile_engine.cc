@@ -18,7 +18,6 @@
  */
 
 /*!
- *  Copyright (c) 2018 by Contributors
  * \file relay/backend/compile_engine.cc
  * \brief Internal compialtion engine.
  */
@@ -42,6 +41,11 @@
 
 namespace tvm {
 namespace relay {
+
+TVM_REGISTER_NODE_TYPE(CachedFuncNode);
+TVM_REGISTER_NODE_TYPE(CCacheKeyNode);
+TVM_REGISTER_NODE_TYPE(CCacheValueNode);
+TVM_REGISTER_OBJECT_TYPE(CompileEngineNode);
 
 CCacheKey CCacheKeyNode::make(Function source_func, Target target) {
   auto n = make_node<CCacheKeyNode>();
@@ -68,6 +72,10 @@ bool IsDynamic(const Type& ty) {
   return v.is_dyn;
 }
 
+// TODO(@jroesch): MOVE ME
+TVM_REGISTER_API("relay._make.IsDynamic")
+.set_body_typed(IsDynamic);
+
 Array<IndexExpr> GetShape(const Array<IndexExpr>& shape) {
   // for now, we always use int32 shape when possible
   // even if the result of shape inference becomes int64.
@@ -78,7 +86,7 @@ Array<IndexExpr> GetShape(const Array<IndexExpr>& shape) {
       CHECK_LE(pval[0], std::numeric_limits<int32_t>::max());
       CHECK_GE(pval[0], std::numeric_limits<int32_t>::min());
       res.push_back(ir::IntImm::make(Int(32), *pval));
-    } else if (val->is_type<ir::Any>()) {
+    } else if (val->IsInstance<ir::Any>()) {
       res.push_back(val.as<ir::Any>()->ToVar());
     } else {
       res.push_back(val);
@@ -769,6 +777,12 @@ TVM_REGISTER_GLOBAL("relay.backend._CompileEngineLower")
 .set_body_typed<CachedFunc(CompileEngine, CCacheKey)>(
     [](CompileEngine self, CCacheKey key) {
       return self->Lower(key);
+    });
+
+TVM_REGISTER_GLOBAL("relay.backend._CompileEngineLowerShapeFunc")
+.set_body_typed<CachedFunc(CompileEngine, CCacheKey)>(
+    [](CompileEngine self, CCacheKey key) {
+      return self->LowerShapeFunc(key);
     });
 
 TVM_REGISTER_GLOBAL("relay.backend._CompileEngineJIT")

@@ -24,7 +24,6 @@
 
 #include <dmlc/any.h>
 #include <dmlc/json.h>
-#include <tvm/node/ir_functor.h>
 #include <tvm/relay/expr_functor.h>
 #include <tvm/runtime/device_api.h>
 
@@ -292,7 +291,7 @@ class GraphRuntimeCodegen
           shape.emplace_back(_ShapeToJSON(typ->shape));
           dtype.emplace_back(DType2String(typ->dtype));
         } else {
-          LOG(FATAL) << "type " << checked_type->type_key() << " not supported";
+          LOG(FATAL) << "type " << checked_type->GetTypeKey() << " not supported";
         }
       }
       CHECK_EQ(node->Type(), kGraphOpNode);
@@ -311,7 +310,7 @@ class GraphRuntimeCodegen
       node->attrs_["shape"] = shape;
       node->attrs_["dtype"] = dtype;
     } else {
-      LOG(FATAL) << "type " << checked_type->type_key() << " not supported";
+      LOG(FATAL) << "type " << checked_type->GetTypeKey() << " not supported";
     }
     return {GraphNodeRef(node_id, 0)};
   }
@@ -392,7 +391,7 @@ class GraphRuntimeCodegen
     } else if (op->op.as<FunctionNode>()) {
       func = GetRef<Function>(op->op.as<FunctionNode>());
     } else {
-      LOG(FATAL) << "TVM runtime does not support calls to " << op->op->type_key();
+      LOG(FATAL) << "TVM runtime does not support calls to " << op->op->GetTypeKey();
     }
     if (!func->IsPrimitive()) {
       LOG(FATAL) << "TVM only support calls to primitive functions "

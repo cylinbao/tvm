@@ -68,7 +68,7 @@ class ModuleNode : public RelayNode {
 
   ModuleNode() {}
 
-  void VisitAttrs(tvm::AttrVisitor* v) final {
+  void VisitAttrs(tvm::AttrVisitor* v) {
     v->Visit("functions", &functions);
     v->Visit("type_definitions", &type_definitions);
     v->Visit("global_var_map_", &global_var_map_);
@@ -76,7 +76,8 @@ class ModuleNode : public RelayNode {
   }
 
   TVM_DLL static Module make(tvm::Map<GlobalVar, Function> global_funcs,
-                             tvm::Map<GlobalTypeVar, TypeData> global_type_defs);
+                             tvm::Map<GlobalTypeVar, TypeData> global_type_defs,
+                             std::unordered_set<std::string> imports = {});
 
   /*!
    * \brief Add a function to the global environment.
@@ -235,6 +236,11 @@ class ModuleNode : public RelayNode {
    */
   TVM_DLL void ImportFromStd(const std::string& path);
 
+  /*!
+   * \brief The set of imported files.
+   */
+  TVM_DLL std::unordered_set<std::string> Imports() const;
+
   /*! \brief Construct a module from a standalone expression.
    *
    * Allows one to optionally pass a global function map and
@@ -281,10 +287,10 @@ class ModuleNode : public RelayNode {
 
 struct Module : public NodeRef {
   Module() {}
-  explicit Module(NodePtr<tvm::Node> p) : NodeRef(p) {}
+  explicit Module(ObjectPtr<::tvm::Object> p) : NodeRef(p) {}
 
-  inline ModuleNode* operator->() const {
-    return static_cast<ModuleNode*>(node_.get());
+  ModuleNode* operator->() const {
+    return static_cast<ModuleNode*>(get_mutable());
   }
 
   using ContainerType = ModuleNode;

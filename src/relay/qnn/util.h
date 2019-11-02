@@ -36,6 +36,13 @@ namespace tvm {
 namespace relay {
 namespace qnn {
 
+static inline Array<IndexExpr> get_shape(const Type& type) {
+  auto input_tt = type.as<TensorTypeNode>();
+  CHECK(input_tt != nullptr) << "Type information missing."
+                             << " Please run infer_type pass.";
+  return input_tt->shape;
+}
+
 static inline const int32_t GetQmin(const DataType& dtype) {
   CHECK_LE(dtype.bits(), 32)
       << "QNN ops support int32 or lower precision";
@@ -76,7 +83,7 @@ Expr RequantizeLower(const Expr& input_tensor, const RequantizeAttrs* param,
 static inline Expr Requantize(const Expr& data, const Array<IndexExpr>& input_shape,
                               double input_scale, int32_t input_zero_point, double output_scale,
                               int32_t output_zero_point, const DataType& out_dtype,
-                              const std::string& rounding = "TONEAREST") {
+                              const std::string& rounding = "UPWARD") {
   auto attrs = make_node<RequantizeAttrs>();
   attrs->input_scale = std::move(input_scale);
   attrs->input_zero_point = std::move(input_zero_point);
@@ -115,9 +122,9 @@ static inline int64_t get_const_int(const tvm::Expr& x) {
  *       2) Round the result.
  *       3) Right shift the result
  */
-Expr FixedPointMuliply(Expr tensor, double multiplier,
-                       const Array<IndexExpr>& input_shape,
-                       const std::string& rounding);
+Expr FixedPointMultiply(Expr tensor, double multiplier,
+                        const Array<IndexExpr>& input_shape,
+                        const std::string& rounding);
 
 }  // namespace qnn
 }  // namespace relay

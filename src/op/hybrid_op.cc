@@ -37,7 +37,8 @@ namespace tvm {
 using namespace ir;
 // HybridOpNode
 TVM_STATIC_IR_FUNCTOR(IRPrinter, vtable)
-.set_dispatch<HybridOpNode>([](const HybridOpNode *op, IRPrinter *p) {
+.set_dispatch<HybridOpNode>([](const ObjectRef& node, IRPrinter* p) {
+    auto* op = static_cast<const HybridOpNode*>(node.get());
     p->stream << "hybrid(" << op->name << ", " << op << ")";
   });
 
@@ -93,7 +94,7 @@ Array<Tensor> HybridOpNode::InputTensors() const {
   ir::PostOrderVisit(body, [&curr_inputs, &orig_inputs, &visited](const NodeRef& n) {
       const ir::Call *call = n.as<ir::Call>();
       if (call != nullptr && call->func.defined()) {
-        Tensor t = Operation(call->func.node_).output(call->value_index);
+        Tensor t = Downcast<Operation>(call->func).output(call->value_index);
         if (orig_inputs.count(t) && !visited.count(t)) {
           curr_inputs.push_back(t);
           visited.insert(t);
@@ -483,7 +484,7 @@ class ProviderReplacer : public ir::IRMutator {
       : vmap_(vmap) {}
 
   Stmt Mutate_(const ir::Provide* op, const Stmt &s) {
-    Tensor t = Operation(op->func.node_).output(op->value_index);
+    Tensor t = Downcast<Operation>(op->func).output(op->value_index);
     auto it = vmap_.find(t);
     if (it != vmap_.end()) {
       Stmt ret = ir::Provide::make(

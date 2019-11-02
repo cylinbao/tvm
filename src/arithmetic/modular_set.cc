@@ -41,11 +41,12 @@ ModularSet::ModularSet(int64_t coeff, int64_t base) {
   node->coeff = coeff;
   node->base = base;
   // finish construction.
-  node_ = std::move(node);
+  data_ = std::move(node);
 }
 
 TVM_STATIC_IR_FUNCTOR(IRPrinter, vtable)
-.set_dispatch<ModularSetNode>([](const ModularSetNode *op, IRPrinter *p) {
+.set_dispatch<ModularSetNode>([](const ObjectRef& node, IRPrinter *p) {
+    auto* op = static_cast<const ModularSetNode*>(node.get());
     p->stream << "ModularSet("
               << "coeff=" << op->coeff << ", base="
               << op->base << ')';

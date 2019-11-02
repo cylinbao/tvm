@@ -69,8 +69,7 @@ const LayoutAxis& LayoutAxis::make(const std::string& name) {
 }
 
 Layout::Layout(const Array<IterVar>& axes) {
-  node_ = make_node<LayoutNode>();
-  LayoutNode *node = operator->();
+  auto node = make_node<LayoutNode>();
   node->axes = axes;
   std::ostringstream repr;
   for (const IterVar& axis : axes) {
@@ -85,13 +84,13 @@ Layout::Layout(const Array<IterVar>& axes) {
     repr << axis->var.get()->name_hint;
   }
   node->name = repr.str();
+  data_ = std::move(node);
 }
 
 Layout::Layout(const std::string& name) { // NOLINT(*)
   if (name == "__undef__") return;
 
-  node_ = make_node<LayoutNode>();
-  LayoutNode *node = operator->();
+  auto node = make_node<LayoutNode>();
   node->name = name;
 
   if (name.empty()) return;  // scalar
@@ -140,6 +139,7 @@ Layout::Layout(const std::string& name) { // NOLINT(*)
                                       << std::toupper(axis);
     }
   }
+  data_ = std::move(node);
 }
 
 Layout LayoutNode::make(const std::string& layout) {
@@ -196,7 +196,8 @@ int32_t Layout::FactorOf(const LayoutAxis& axis) const {
 }
 
 TVM_STATIC_IR_FUNCTOR(IRPrinter, vtable)
-.set_dispatch<LayoutNode>([](const LayoutNode* l, IRPrinter* p) {
+.set_dispatch<LayoutNode>([](const ObjectRef& node, IRPrinter* p) {
+    auto* l = static_cast<const LayoutNode*>(node.get());
     p->stream << "Layout(" << l->name << ")";
   });
 
@@ -352,7 +353,8 @@ BijectiveLayout BijectiveLayoutNode::make(const Layout& src_layout,
 }
 
 TVM_STATIC_IR_FUNCTOR(IRPrinter, vtable)
-.set_dispatch<BijectiveLayoutNode>([](const BijectiveLayoutNode* b, IRPrinter* p) {
+.set_dispatch<BijectiveLayoutNode>([](const ObjectRef& node, IRPrinter* p) {
+    auto* b = static_cast<const BijectiveLayoutNode*>(node.get());
     p->stream << "BijectiveLayout(" << b->src_layout.name()
               << "->" << b->dst_layout.name() << ")";
   });
